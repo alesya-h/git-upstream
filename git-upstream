@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Distributed under MIT license
+# Copyright Alesya Huzik 2023
+
 UPSTREAM_BRANCH=$1
 dry_run=false
 
