@@ -10,7 +10,7 @@ This project is basically a tool for turning fork history with periodic merges i
 
 ## How to use it
 
-Put git-upstream somewhere on your path and then
+Install git-imerge, put git-upstream somewhere on your path and then
 
     git checkout my_branch
     git upstream origin/master
