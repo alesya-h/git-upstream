@@ -15,7 +15,7 @@ Install [git-imerge](https://github.com/mhagger/git-imerge), put git-upstream so
     git checkout my_branch
     git upstream origin/master
 
-At this point it will create a branch named `temp` and will start working its magic. When it encounters a conflict (because we are using imerge, they are tiny and exactly at the point where conflicting ideas of the code were introduced), it will pause and ask you to resolve the conflict and press Enter to continue. After all conflicts are resolved it will say that it's done, and you will be left with the `temp` branch that would contain desired history.
+At this point it will create a branch named `temp` and will start working its magic. When it encounters a conflict (because we are using imerge, they are tiny and exactly at the point where conflicting ideas of the code were introduced), it will pause and ask you to resolve the conflict and press Enter to continue. After all conflicts are resolved it will say that it's done, and you will be left with the `temp` branch that contains desired history.
 
 ## How does it work
 
