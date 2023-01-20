@@ -8,6 +8,15 @@ They made a fork, they periodically merge upstream changes, but they can't contr
 
 This project is basically a tool for turning fork history with periodic merges into linear history on top of the upstream.
 
+## How to use it
+
+Put git-upstream somewhere on your path and then
+
+    git checkout my_branch
+    git upstream origin/master
+
+At this point it will create a branch named `temp` and will start working its magic. When it encounters a conflict (because we are using imerge, they are tiny and exactly at the point where conflicting ideas of the code were introduced), it will pause and ask you to resolve the conflict and press Enter to continue. After all conflicts are resolved it will say that it's done, and you will be left with the `temp` branch that would contain desired history.
+
 ## How does it work
 
 Below is the gist of the mental model for it. 
@@ -64,15 +73,6 @@ C4
     git reset --hard B-over-Co-full
 
     git cherry-pick C1, C2, C3, C4
-
-## How to use it
-
-Put git-upstream somewhere on your path and then
-
-    git checkout my_branch
-    git upstream origin/master
-
-At this point it will create a branch named `temp` and will start working its magic. When it encounters a conflict (because we are using imerge, they are tiny and exactly at the point where conflicting ideas of the code were introduced), it will pause and ask you to resolve the conflict and press Enter to continue. After all conflicts are resolved it will say that it's done, and you will be left with the `temp` branch that would contain desired history.
 
 ## Plans for improvements
 
