@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+UPSTREAM_BRANCH=$1
+dry_run=false
+
+if [ "$2" == "--dry-run" ]; then
+  dry_run=true
+fi
+
+
+# Define colors for logging
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+run_or_echo() {
+  if $dry_run; then
+    echo "$@"
+  else
+    "$@"
+  fi
+}
+
+maybe_fail() {
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Unexpected failure. Cannot proceed.${NC}"
+    exit 1
+  fi
+}
+
+has_unmerged_paths() {
+  [ $(git diff --name-only --diff-filter=U|wc -l) -ne 0 ]
+}
+
+manual_conflict_resolution() {
+  echo -e "${YELLOW}Conflicts encountered, please resolve them and press Enter to continue${NC}"
+  read
+}
+
+# Find all commits in the fork branch
+commits=$(git log --reverse --pretty=format:"%H" ${UPSTREAM_BRANCH}..HEAD)
+
+earliest_commit=$(git rev-list ${UPSTREAM_BRANCH}..HEAD | tail -1)
+# Find the latest common commit before any merges
+root_point=$(git log -1 --pretty=format:"%P" $earliest_commit | awk '{print $1}')
+
+# Create a temporary branch at the root point
+run_or_echo git switch ${root_point} -C temp
+
+for commit_hash in $commits; do
+  echo
+  echo -e "${GREEN}Processing commit:${NC}"
+  git log -1 $commit_hash 
+
+  parents=$(git log -1 --pretty=format:"%P" ${commit_hash})
+  parent_count=$(echo $parents | wc -w)
+
+  if [ $parent_count -gt 1 ]; then
+    merge_point=$(git log -1 --pretty=format:"%P" ${commit_hash} | awk '{print $2}')
+    echo -e "${GREEN}Rebasing branch on top of merge point ${merge_point}...${NC}"
+    run_or_echo git imerge rebase $merge_point
+    while has_unmerged_paths; do
+      manual_conflict_resolution
+      run_or_echo git imerge continue
+    done
+
+    echo -e "${GREEN}Finishing interactive merge...${NC}"
+    run_or_echo git imerge finish
+    maybe_fail
+
+    echo -e "${GREEN}Creating a commit with merge commit's changes...${NC}"
+    run_or_echo git switch -C "${commit_hash}-main"
+    run_or_echo git switch ${commit_hash} -C "${commit_hash}-full"
+    run_or_echo git reset --soft "${commit_hash}-main"
+
+    message=$(git log -1 --pretty=format:"%s" ${commit_hash})
+    run_or_echo git commit --allow-empty -C ${commit_hash} -m "Additional changes from ${commit_hash}: ${message}"
+
+    echo -e "${GREEN}Checking out the temporary branch...${NC}"
+    run_or_echo git switch temp
+
+    echo -e "${GREEN}Resetting to the full changes...${NC}"
+    run_or_echo git reset --hard "${commit_hash}-full"
+
+    echo -e "${GREEN}Removing helper branches...${NC}"
+    run_or_echo git branch -D "${commit_hash}-main"
+    run_or_echo git branch -D "${commit_hash}-full"
+  else
+    echo -e "${GREEN}Cherry-picking commit...${NC}"
+    run_or_echo git cherry-pick ${commit_hash}
+    while has_unmerged_paths; do
+      manual_conflict_resolution
+      run_or_echo git -c core.editor=true cherry-pick --continue
+    done
+  fi
+  echo
+done
+echo -e "${GREEN}Done!${NC}"
